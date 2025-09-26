@@ -1,0 +1,74 @@
+#define function number() view returns (uint256)
+#define function setNumber(uint256) nonpayable returns ()
+#define function increment() nonpayable returns ()
+
+/* Storage Slots */
+#define constant NUMBER_SLOT = 0x00
+
+/* Interface */
+#define macro NUMBER() = takes(0) returns(0) {
+    // Load value from storage
+    [NUMBER_SLOT]     // [slot]
+    sload             // [value]
+    
+    // Store value in memory and return it
+    0x00             // [0, value]
+    mstore           // []
+    0x20             // [32]
+    0x00             // [0, 32]
+    return           // []
+}
+
+#define macro SET_NUMBER() = takes(0) returns(0) {
+    // Get the new number from the calldata
+    0x04             // [4]
+    calldataload     // [newNumber]
+    
+    // Store it
+    [NUMBER_SLOT]    // [slot, newNumber]
+    sstore           // []
+    
+    // Return nothing
+    0x00             // [0]
+    0x00             // [0, 0]
+    return           // []
+}
+
+#define macro INCREMENT() = takes(0) returns(0) {
+    // Load current value
+    [NUMBER_SLOT]    // [slot]
+    sload            // [value]
+    
+    // Add 1
+    0x01            // [1, value]
+    add             // [value+1]
+    
+    // Store new value
+    [NUMBER_SLOT]   // [slot, value+1]
+    sstore          // []
+    
+    // Return nothing
+    0x00            // [0]
+    0x00            // [0, 0]
+    return          // []
+}
+
+#define macro MAIN() = takes(0) returns(0) {
+    // Identify which function is being called
+    0x00 calldataload 0xE0 shr  // [selector]
+    
+    // Jump to the appropriate function
+    dup1 __FUNC_SIG(number)     eq numberJump jumpi
+    dup1 __FUNC_SIG(setNumber)  eq setNumberJump jumpi
+    dup1 __FUNC_SIG(increment)  eq incrementJump jumpi
+    
+    // If no function matches, revert
+    0x00 0x00 revert
+    
+    numberJump:
+        NUMBER()
+    setNumberJump:
+        SET_NUMBER()
+    incrementJump:
+        INCREMENT()
+}
